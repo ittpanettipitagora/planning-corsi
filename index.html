@@ -105,6 +105,8 @@
     padding:4px 9px; font-size:0.75rem;
   }
   button.ghost:hover{background:var(--conflict-soft);}
+  button.ghost.edit{color:var(--teal); border-color:var(--teal); margin-right:4px;}
+  button.ghost.edit:hover{background:var(--teal-soft);}
   button.nav{
     background:transparent; color:var(--ink); border-color:var(--ink);
     padding:6px 12px; font-size:0.85rem;
@@ -205,8 +207,9 @@
 
   <header>
     <div>
-      <h1>Planning corsi</h1>
-          </div>
+      <h1>Planning corsi @pprendiamo</h1>
+      
+    </div>
     <div style="text-align:right;">
       <div class="status" id="status">caricamento…</div>
       <div class="backup-bar">
@@ -235,6 +238,7 @@
 
       <div class="occ-actions">
         <button type="button" class="secondary" id="addOccBtn">+ aggiungi un'altra data</button>
+        <button type="button" class="tiny" id="cancelEditBtn" style="display:none;">Annulla modifica</button>
         <button type="submit" id="submitBtn">Aggiungi</button>
       </div>
     </form>
@@ -512,7 +516,10 @@ function renderList(){
         <td>${d}/${m}/${y}${conflict?' <strong style="color:var(--conflict); font-size:0.75rem;">⚠</strong>':''}</td>
         <td>${c.inizio}–${c.fine}</td>
         <td>${tags || '<span style="color:var(--ink-soft);">—</span>'}</td>
-        <td><button class="ghost" data-id="${c.id}">Rimuovi data</button></td>
+        <td>
+          <button class="ghost edit" data-edit-id="${c.id}">Modifica</button>
+          <button class="ghost" data-id="${c.id}">Rimuovi data</button>
+        </td>
       </tr>`;
     });
     html += '</tbody></table>';
@@ -523,6 +530,11 @@ function renderList(){
   wrap.querySelectorAll('button.ghost[data-id]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       await deleteCourseRemote(btn.dataset.id);
+    });
+  });
+  wrap.querySelectorAll('button.ghost.edit[data-edit-id]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      startEdit(btn.dataset.editId);
     });
   });
   wrap.querySelectorAll('button.ghost[data-group]').forEach(btn=>{
@@ -590,6 +602,39 @@ function resetOccRows(){
   addOccRow({data: isoDate(now.getFullYear(), now.getMonth(), now.getDate())});
 }
 
+let editingId = null;
+
+function startEdit(id){
+  const c = courses.find(co=>co.id===id);
+  if(!c) return;
+  editingId = id;
+  document.getElementById('nome').value = c.nome;
+  document.getElementById('risorse').value = c.risorse || '';
+  const list = document.getElementById('occList');
+  list.innerHTML = '';
+  addOccRow({data:c.data, inizio:c.inizio, fine:c.fine});
+  document.getElementById('addOccBtn').style.display = 'none';
+  document.getElementById('cancelEditBtn').style.display = '';
+  document.getElementById('submitBtn').textContent = 'Salva modifiche';
+  const formMsg = document.getElementById('formMsg');
+  formMsg.textContent = `Stai modificando "${c.nome}" (${c.data.split('-').reverse().join('/')}). Cambia i campi e premi "Salva modifiche", oppure "Annulla modifica".`;
+  formMsg.style.color = 'var(--ink-soft)';
+  document.getElementById('courseForm').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function cancelEdit(){
+  editingId = null;
+  document.getElementById('courseForm').reset();
+  resetOccRows();
+  document.getElementById('addOccBtn').style.display = '';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+  document.getElementById('submitBtn').textContent = 'Aggiungi';
+  document.getElementById('formMsg').textContent = 'Nome e risorse valgono per tutte le date inserite. Separa più risorse con la virgola. Clicca su un giorno nel calendario per aggiungere rapidamente quella data a una riga. Il planning è condiviso online: chiunque abbia il link vede le stesse modifiche.';
+  document.getElementById('formMsg').style.color = '';
+}
+
+document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
+
 document.getElementById('addOccBtn').addEventListener('click', ()=> addOccRow());
 
 document.getElementById('prevBtn').addEventListener('click', ()=>{
@@ -634,6 +679,19 @@ document.getElementById('courseForm').addEventListener('submit', async (e)=>{
       return;
     }
     occorrenze.push({data, inizio, fine});
+  }
+
+  if(editingId){
+    const o = occorrenze[0];
+    try{
+      await addCoursesRemote([{id: editingId, nome, data:o.data, inizio:o.inizio, fine:o.fine, risorse}]);
+    }catch(err){
+      return;
+    }
+    cancelEdit();
+    formMsg.textContent = `✓ "${nome}" aggiornato.`;
+    formMsg.style.color = 'var(--teal)';
+    return;
   }
 
   const nuoviCorsi = occorrenze.map(o => ({id: uid(), nome, data:o.data, inizio:o.inizio, fine:o.fine, risorse}));
