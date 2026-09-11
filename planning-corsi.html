@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planning corsi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F7F5F0;
+    --paper-line:#DCD6C8;
+    --ink:#1C2B3A;
+    --ink-soft:#5B6B78;
+    --teal:#2E6F63;
+    --teal-soft:#E4EEEB;
+    --gold:#B8860F;
+    --gold-soft:#F3E9CE;
+    --clay:#B4502F;
+    --conflict:#B23A2E;
+    --conflict-soft:#FBE4DF;
+    --white:#FFFFFF;
+    --today:#F3E9CE;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    padding:28px 20px 60px;
+  }
+  .wrap{max-width:1180px; margin:0 auto;}
+  header{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    gap:20px; margin-bottom:22px; flex-wrap:wrap;
+    border-bottom:2px solid var(--ink); padding-bottom:16px;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700; font-size:2rem; margin:0 0 4px;
+    letter-spacing:-0.01em;
+  }
+  header p{margin:0; color:var(--ink-soft); font-size:0.95rem; max-width:46ch;}
+  .status{font-family:'IBM Plex Mono', monospace; font-size:0.78rem; color:var(--ink-soft);}
+  .backup-bar{display:flex; gap:6px; justify-content:flex-end; margin-top:6px;}
+  button.tiny{
+    font-family:'IBM Plex Sans', sans-serif; font-weight:500; font-size:0.72rem;
+    background:transparent; color:var(--ink-soft); border:1px solid #C7C0AF;
+    padding:4px 9px; border-radius:3px;
+  }
+  button.tiny:hover{border-color:var(--teal); color:var(--teal);}
+
+  .panel{
+    background:var(--white);
+    border:1.5px solid var(--ink);
+    border-radius:2px;
+    padding:20px 22px;
+    margin-bottom:22px;
+  }
+  .panel h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:1.05rem; margin:0 0 14px; font-weight:600;
+  }
+  form{display:flex; flex-direction:column; gap:14px;}
+  .corso-fields{display:grid; grid-template-columns:1.3fr 1.3fr; gap:12px;}
+  @media (max-width:640px){ .corso-fields{grid-template-columns:1fr;} }
+  .occ-list{display:flex; flex-direction:column; gap:8px;}
+  .occ-row{
+    display:grid; grid-template-columns:1fr 0.8fr 0.8fr auto; gap:10px; align-items:end;
+    background:var(--paper); border:1px solid var(--paper-line); border-radius:3px; padding:8px 9px 8px;
+  }
+  @media (max-width:640px){ .occ-row{grid-template-columns:1fr 1fr; grid-template-areas:"data data" "inizio fine" "remove remove";} }
+  .occ-actions{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;}
+  button.secondary{
+    background:transparent; color:var(--teal); border-color:var(--teal);
+    padding:7px 12px; font-size:0.82rem;
+  }
+  button.secondary:hover{background:var(--teal-soft); color:var(--ink);}
+  button.remove-occ{
+    background:transparent; border:1.3px solid #C7C0AF; color:var(--ink-soft);
+    border-radius:3px; padding:8px 10px; font-size:0.85rem; line-height:1;
+  }
+  button.remove-occ:hover{border-color:var(--conflict); color:var(--conflict);}
+  button.remove-occ:disabled{opacity:0.35; cursor:not-allowed;}
+  label{display:block; font-size:0.75rem; color:var(--ink-soft); margin-bottom:5px; font-weight:500;}
+  input, select{
+    width:100%; padding:8px 9px; border:1.3px solid #C7C0AF; border-radius:3px;
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.9rem; background:var(--paper);
+    color:var(--ink);
+  }
+  input:focus, select:focus{outline:2px solid var(--teal); outline-offset:1px; border-color:var(--teal);}
+  button{
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:0.88rem;
+    border:1.5px solid var(--ink); background:var(--ink); color:var(--white);
+    padding:9px 16px; border-radius:3px; cursor:pointer; white-space:nowrap;
+  }
+  button:hover{background:var(--teal); border-color:var(--teal);}
+  button.ghost{
+    background:transparent; color:var(--conflict); border-color:var(--conflict);
+    padding:4px 9px; font-size:0.75rem;
+  }
+  button.ghost:hover{background:var(--conflict-soft);}
+  button.nav{
+    background:transparent; color:var(--ink); border-color:var(--ink);
+    padding:6px 12px; font-size:0.85rem;
+  }
+  button.nav:hover{background:var(--teal-soft); border-color:var(--teal); color:var(--ink);}
+  .hint{font-size:0.78rem; color:var(--ink-soft); margin-top:10px;}
+
+  .legend{display:flex; gap:18px; flex-wrap:wrap; font-size:0.78rem; color:var(--ink-soft); margin-bottom:14px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .swatch{width:12px; height:12px; border-radius:2px; display:inline-block; border:1px solid rgba(0,0,0,0.25);}
+
+  .monthbar{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:10px; gap:12px; flex-wrap:wrap;
+  }
+  .monthbar .label{
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:1.15rem;
+    text-transform:capitalize; min-width:160px;
+  }
+  .monthnav{display:flex; gap:8px; align-items:center;}
+
+  .cal-outer{border:1.5px solid var(--ink); border-radius:2px; background:var(--white); overflow:hidden;}
+  .cal-grid{display:grid; grid-template-columns:repeat(7, minmax(0,1fr));}
+  .cal-head-cell{
+    text-align:center; padding:9px 4px; font-family:'Space Grotesk', sans-serif;
+    font-weight:600; font-size:0.8rem; border-right:1px solid var(--paper-line);
+    border-bottom:1.5px solid var(--ink); background:var(--white);
+    min-width:0;
+  }
+  .cal-head-cell:nth-child(7n){border-right:none;}
+  .daycell{
+    min-height:112px; min-width:0; border-right:1px solid var(--paper-line); border-bottom:1px solid var(--paper-line);
+    padding:6px 6px 8px; position:relative; cursor:pointer;
+  }
+  .daycell:nth-child(7n){border-right:none;}
+  .daycell.outside{background:#FBFAF7;}
+  .daycell.outside .daynum{color:#B7B0A0;}
+  .daycell.today{background:var(--today);}
+  .daynum{
+    font-family:'IBM Plex Mono', monospace; font-size:0.75rem; color:var(--ink-soft);
+    margin-bottom:5px;
+  }
+  .chip{
+    background:var(--teal-soft); border:1px solid var(--teal); border-left-width:4px; border-radius:3px;
+    padding:4px 22px 4px 6px; font-size:0.7rem; line-height:1.35; margin-bottom:4px;
+    min-width:0; position:relative;
+  }
+  .chip.conflict{background:var(--conflict-soft); border-color:var(--conflict);}
+  .chip-time{
+    display:block; font-family:'IBM Plex Mono', monospace; font-weight:700;
+    font-size:0.72rem; letter-spacing:-0.01em; color:var(--ink);
+    background:rgba(255,255,255,0.65); border-radius:2px; padding:1px 4px; margin-bottom:2px;
+    width:fit-content;
+  }
+  .chip.conflict .chip-time{color:var(--conflict); background:rgba(255,255,255,0.75);}
+  .chip-name{
+    font-weight:500; color:var(--ink); display:block;
+    white-space:normal; word-break:break-word;
+  }
+  .chip-res{
+    display:block; font-size:0.64rem; color:var(--ink-soft); margin-top:2px;
+    white-space:normal; word-break:break-word;
+  }
+  .chip-del{
+    position:absolute; top:3px; right:3px; width:16px; height:16px; line-height:14px;
+    text-align:center; border-radius:50%; border:1px solid transparent; background:transparent;
+    color:var(--ink-soft); font-size:0.75rem; padding:0; cursor:pointer;
+  }
+  .chip-del:hover{background:var(--conflict); color:#fff; border-color:var(--conflict);}
+  .color-legend{display:flex; gap:14px; flex-wrap:wrap; font-size:0.78rem; color:var(--ink-soft); margin-bottom:18px;}
+  .color-legend span{display:inline-flex; align-items:center; gap:6px;}
+
+  table{width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:4px;}
+  th{
+    text-align:left; font-family:'Space Grotesk', sans-serif; font-size:0.75rem;
+    color:var(--ink-soft); font-weight:600; padding:6px 8px; border-bottom:1.5px solid var(--ink);
+  }
+  td{padding:8px; border-bottom:1px solid var(--paper-line); vertical-align:top;}
+  tr.is-conflict td{background:var(--conflict-soft);}
+  .tagpill{
+    display:inline-block; background:var(--gold-soft); border:1px solid var(--gold);
+    color:#7A5C08; border-radius:10px; padding:1px 8px; font-size:0.72rem; margin:1px 3px 1px 0;
+  }
+  .empty{padding:26px; text-align:center; color:var(--ink-soft); font-size:0.88rem;}
+  .group-head{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:12px 4px 6px; border-top:1.5px solid var(--ink);
+  }
+  .group-head:first-child{border-top:none;}
+  .group-title{display:flex; align-items:center; gap:8px; font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:0.92rem;}
+  .group-swatch{width:11px; height:11px; border-radius:2px; display:inline-block; border:1px solid rgba(0,0,0,0.25);}
+  .group-count{font-size:0.75rem; color:var(--ink-soft); font-weight:400;}
+  .group-table{margin-bottom:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Planning corsi</h1>
+          </div>
+    <div style="text-align:right;">
+      <div class="status" id="status">caricamento…</div>
+      <div class="backup-bar">
+        <button type="button" class="tiny" id="exportBtn">⬇ Esporta backup</button>
+        <button type="button" class="tiny" id="importBtn">⬆ Importa backup</button>
+        <input type="file" id="importFile" accept="application/json" hidden>
+      </div>
+    </div>
+  </header>
+
+  <div class="panel">
+    <h2>Aggiungi corso</h2>
+    <form id="courseForm">
+      <div class="corso-fields">
+        <div>
+          <label for="nome">Nome corso</label>
+          <input id="nome" type="text" placeholder="es. Robotica base">
+        </div>
+        <div>
+          <label for="risorse">Risorse coinvolte</label>
+          <input id="risorse" type="text" placeholder="es. 4ITIAC, Aula 12, Prof. Rossi">
+        </div>
+      </div>
+
+      <div id="occList" class="occ-list"></div>
+
+      <div class="occ-actions">
+        <button type="button" class="secondary" id="addOccBtn">+ aggiungi un'altra data</button>
+        <button type="submit" id="submitBtn">Aggiungi</button>
+      </div>
+    </form>
+    <p class="hint" id="formMsg">Nome e risorse valgono per tutte le date inserite. Separa più risorse con la virgola. Clicca su un giorno nel calendario per aggiungere rapidamente quella data a una riga. Il planning è condiviso: chiunque abbia il link vede le stesse modifiche.</p>
+  </div>
+
+  <div class="legend">
+    <span><span class="swatch" style="background:var(--conflict-soft); border-color:var(--conflict);"></span>corso in conflitto (risorsa + orario condivisi)</span>
+  </div>
+  <div class="color-legend" id="colorLegend"></div>
+
+  <div class="monthbar">
+    <div class="label" id="monthLabel">—</div>
+    <div class="monthnav">
+      <button class="nav" id="prevBtn">‹ mese prec.</button>
+      <button class="nav" id="todayBtn">oggi</button>
+      <button class="nav" id="nextBtn">mese succ. ›</button>
+    </div>
+  </div>
+
+  <div class="cal-outer">
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+
+  <div class="panel" style="margin-top:22px;">
+    <h2>Elenco corsi</h2>
+    <div id="listWrap"></div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAn3xmkQNaaTaRv4RWdzYcZaWKbtkd-xbo",
+  authDomain: "planning-corsi.firebaseapp.com",
+  projectId: "planning-corsi",
+  storageBucket: "planning-corsi.firebasestorage.app",
+  messagingSenderId: "465735157889",
+  appId: "1:465735157889:web:18aebcf6d6adcbf1f7e580"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const corsiCollection = collection(db, 'corsi');
+
+const WEEKDAYS = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+const MONTHS = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+
+let courses = [];
+let viewYear, viewMonth; // 0-indexed month
+const now = new Date();
+viewYear = now.getFullYear();
+viewMonth = now.getMonth();
+
+const statusEl = document.getElementById('status');
+
+function toMin(t){ const [h,m] = t.split(':').map(Number); return h*60+m; }
+function tagList(s){ return s.split(',').map(x=>x.trim()).filter(Boolean); }
+function uid(){ return 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function pad2(n){ return String(n).padStart(2,'0'); }
+function isoDate(y,m,d){ return `${y}-${pad2(m+1)}-${pad2(d)}`; }
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function overlaps(a,b){
+  return a.data===b.data && toMin(a.inizio) < toMin(b.fine) && toMin(b.inizio) < toMin(a.fine);
+}
+
+const COLOR_PALETTE = [
+  {bg:'#E4EEEB', border:'#2E6F63'}, // teal
+  {bg:'#F3E9CE', border:'#B8860F'}, // gold
+  {bg:'#F5E1D6', border:'#B4502F'}, // clay
+  {bg:'#E6E3F5', border:'#5B4B9E'}, // indigo
+  {bg:'#E8EFD9', border:'#5C7A29'}, // olive
+  {bg:'#F5E0EC', border:'#A83E76'}, // plum
+  {bg:'#DCEEF5', border:'#2678A3'}, // sky
+  {bg:'#F0E6D9', border:'#8A5A2B'}, // sienna
+  {bg:'#EDE6F7', border:'#7A4FA0'}, // purple
+  {bg:'#E1F0E8', border:'#1F8A5F'}, // green
+];
+function courseColor(nome){
+  let h = 0;
+  for(let i=0; i<nome.length; i++){ h = (h*31 + nome.charCodeAt(i)) >>> 0; }
+  return COLOR_PALETTE[h % COLOR_PALETTE.length];
+}
+function shareResource(a,b){
+  const ta = tagList(a.risorse||''), tb = tagList(b.risorse||'');
+  if(!ta.length || !tb.length) return false;
+  return ta.some(t => tb.includes(t));
+}
+function isConflict(c){
+  return courses.some(o => o.id !== c.id && overlaps(c,o) && shareResource(c,o));
+}
+
+function startSync(){
+  statusEl.textContent = 'connessione al database…';
+  onSnapshot(corsiCollection, (snapshot)=>{
+    courses = snapshot.docs.map(d => d.data());
+    statusEl.textContent = `sincronizzato online · ${courses.length} corsi`;
+    render();
+  }, (err)=>{
+    statusEl.textContent = '⚠ errore di connessione al database: ' + err.message;
+  });
+}
+
+async function addCoursesRemote(list){
+  statusEl.textContent = 'salvataggio…';
+  try{
+    await Promise.all(list.map(c => setDoc(doc(corsiCollection, c.id), c)));
+  }catch(e){
+    statusEl.textContent = '⚠ errore di salvataggio: ' + e.message;
+    throw e;
+  }
+}
+
+async function deleteCourseRemote(id){
+  statusEl.textContent = 'eliminazione…';
+  try{
+    await deleteDoc(doc(corsiCollection, id));
+  }catch(e){
+    statusEl.textContent = '⚠ errore durante l\'eliminazione: ' + e.message;
+  }
+}
+
+async function deleteCoursesRemote(ids){
+  statusEl.textContent = 'eliminazione…';
+  try{
+    await Promise.all(ids.map(id => deleteDoc(doc(corsiCollection, id))));
+  }catch(e){
+    statusEl.textContent = '⚠ errore durante l\'eliminazione: ' + e.message;
+  }
+}
+
+function buildMonthGrid(){
+  document.getElementById('monthLabel').textContent = `${MONTHS[viewMonth]} ${viewYear}`;
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  WEEKDAYS.forEach(d=>{
+    const head = document.createElement('div');
+    head.className = 'cal-head-cell';
+    head.textContent = d;
+    grid.appendChild(head);
+  });
+
+  const firstOfMonth = new Date(viewYear, viewMonth, 1);
+  // Monday=0 ... Sunday=6
+  const firstWeekday = (firstOfMonth.getDay() + 6) % 7;
+  const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+  const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
+
+  const todayIso = isoDate(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const cells = [];
+  // leading days from previous month
+  for(let i=firstWeekday-1; i>=0; i--){
+    const d = daysInPrevMonth - i;
+    const m = viewMonth===0 ? 11 : viewMonth-1;
+    const y = viewMonth===0 ? viewYear-1 : viewYear;
+    cells.push({day:d, month:m, year:y, outside:true});
+  }
+  // current month
+  for(let d=1; d<=daysInMonth; d++){
+    cells.push({day:d, month:viewMonth, year:viewYear, outside:false});
+  }
+  // trailing days to complete final week
+  while(cells.length % 7 !== 0){
+    cells.push({day:0, month:0, year:0, outside:true});
+  }
+  // fix trailing day numbers properly
+  let trailCounter = 1;
+  const nextMonth = viewMonth===11 ? 0 : viewMonth+1;
+  const nextYear = viewMonth===11 ? viewYear+1 : viewYear;
+  for(let i=firstWeekday+daysInMonth; i<cells.length; i++){
+    cells[i].day = trailCounter++;
+    cells[i].month = nextMonth;
+    cells[i].year = nextYear;
+  }
+
+  cells.forEach(c=>{
+    const iso = isoDate(c.year, c.month, c.day);
+    const cell = document.createElement('div');
+    cell.className = 'daycell' + (c.outside ? ' outside':'') + (iso===todayIso ? ' today':'');
+    cell.dataset.date = iso;
+
+    const dayCourses = courses.filter(co=>co.data===iso).sort((a,b)=>toMin(a.inizio)-toMin(b.inizio));
+    let chipsHtml = '';
+    dayCourses.forEach(co=>{
+      const conflict = isConflict(co);
+      const col = courseColor(co.nome);
+      const styleAttr = conflict ? '' : `style="background:${col.bg}; border-color:${col.border};"`;
+      chipsHtml += `<div class="chip ${conflict?'conflict':''}" ${styleAttr} title="${escapeHtml(co.nome)} ${co.inizio}-${co.fine}${co.risorse ? ' · '+escapeHtml(co.risorse):''}" data-id="${co.id}">
+        <button type="button" class="chip-del" data-id="${co.id}" title="Elimina questa data">×</button>
+        <span class="chip-time">${co.inizio}–${co.fine}</span><span class="chip-name">${escapeHtml(co.nome)}</span>${co.risorse ? `<span class="chip-res">${escapeHtml(co.risorse)}</span>` : ''}
+      </div>`;
+    });
+
+    cell.innerHTML = `<div class="daynum">${c.day}</div>${chipsHtml}`;
+    cell.querySelectorAll('.chip-del').forEach(btn=>{
+      btn.addEventListener('click', async (ev)=>{
+        ev.stopPropagation();
+        await deleteCourseRemote(btn.dataset.id);
+      });
+    });
+    cell.addEventListener('click', (ev)=>{
+      if(ev.target.closest('.chip-del')) return;
+      const rows = [...document.querySelectorAll('#occList .occ-row')];
+      const emptyRow = rows.find(r => !r.querySelector('.occ-data').value);
+      if(emptyRow){
+        emptyRow.querySelector('.occ-data').value = iso;
+      } else {
+        addOccRow({data: iso});
+      }
+      document.getElementById('nome').focus();
+    });
+    grid.appendChild(cell);
+  });
+}
+
+function renderColorLegend(){
+  const el = document.getElementById('colorLegend');
+  const names = [...new Set(courses.map(c=>c.nome))].sort((a,b)=>a.localeCompare(b));
+  if(!names.length){ el.innerHTML = ''; return; }
+  el.innerHTML = names.map(n=>{
+    const col = courseColor(n);
+    return `<span><span class="swatch" style="background:${col.bg}; border-color:${col.border};"></span>${escapeHtml(n)}</span>`;
+  }).join('');
+}
+
+function render(){
+  buildMonthGrid();
+  renderList();
+  renderColorLegend();
+}
+
+function renderList(){
+  const wrap = document.getElementById('listWrap');
+  if(!courses.length){
+    wrap.innerHTML = '<div class="empty">Nessun corso ancora. Aggiungine uno dal modulo qui sopra o clicca su un giorno nel calendario.</div>';
+    return;
+  }
+
+  const names = [...new Set(courses.map(c=>c.nome))];
+  // order groups by their earliest date instead of alphabetically
+  const groupEarliest = {};
+  names.forEach(n=>{
+    groupEarliest[n] = courses.filter(c=>c.nome===n).map(c=>c.data).sort()[0];
+  });
+  names.sort((a,b)=> groupEarliest[a].localeCompare(groupEarliest[b]));
+
+  let html = '';
+  names.forEach(nome=>{
+    const group = courses.filter(c=>c.nome===nome).sort((a,b)=> a.data.localeCompare(b.data) || toMin(a.inizio)-toMin(b.inizio));
+    const col = courseColor(nome);
+    html += `<div class="group-head">
+      <div class="group-title">
+        <span class="group-swatch" style="background:${col.bg}; border-color:${col.border};"></span>
+        ${escapeHtml(nome)}
+        <span class="group-count">${group.length} ${group.length===1?'data':'date'}</span>
+      </div>
+      <button class="ghost" data-group="${escapeHtml(nome)}">Elimina tutto il corso</button>
+    </div>`;
+    html += '<table class="group-table"><thead><tr><th>Data</th><th>Orario</th><th>Risorse</th><th></th></tr></thead><tbody>';
+    group.forEach(c=>{
+      const conflict = isConflict(c);
+      const tags = tagList(c.risorse||'').map(t=>`<span class="tagpill">${escapeHtml(t)}</span>`).join('');
+      const [y,m,d] = c.data.split('-');
+      html += `<tr class="${conflict?'is-conflict':''}">
+        <td>${d}/${m}/${y}${conflict?' <strong style="color:var(--conflict); font-size:0.75rem;">⚠</strong>':''}</td>
+        <td>${c.inizio}–${c.fine}</td>
+        <td>${tags || '<span style="color:var(--ink-soft);">—</span>'}</td>
+        <td><button class="ghost" data-id="${c.id}">Rimuovi data</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+  });
+
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('button.ghost[data-id]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      await deleteCourseRemote(btn.dataset.id);
+    });
+  });
+  wrap.querySelectorAll('button.ghost[data-group]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const nome = btn.dataset.group;
+      if(!confirm(`Eliminare tutte le date del corso "${nome}"?`)) return;
+      const ids = courses.filter(c=>c.nome === nome).map(c=>c.id);
+      await deleteCoursesRemote(ids);
+    });
+  });
+}
+
+let occRowSeq = 0;
+
+function createOccRow(prefill){
+  occRowSeq++;
+  const row = document.createElement('div');
+  row.className = 'occ-row';
+  row.dataset.rowId = String(occRowSeq);
+  row.innerHTML = `
+    <div>
+      <label>Data</label>
+      <input type="date" class="occ-data" value="${prefill.data || ''}">
+    </div>
+    <div>
+      <label>Inizio</label>
+      <input type="time" class="occ-inizio" value="${prefill.inizio || '09:00'}">
+    </div>
+    <div>
+      <label>Fine</label>
+      <input type="time" class="occ-fine" value="${prefill.fine || '10:00'}">
+    </div>
+    <button type="button" class="remove-occ" title="Rimuovi questa data">×</button>
+  `;
+  row.querySelector('.remove-occ').addEventListener('click', ()=>{
+    row.remove();
+    updateRemoveButtons();
+  });
+  return row;
+}
+
+function addOccRow(prefill={}){
+  const list = document.getElementById('occList');
+  const rows = list.querySelectorAll('.occ-row');
+  const last = rows[rows.length-1];
+  const defaults = {
+    data: prefill.data || '',
+    inizio: prefill.inizio || (last ? last.querySelector('.occ-inizio').value : '09:00'),
+    fine: prefill.fine || (last ? last.querySelector('.occ-fine').value : '10:00')
+  };
+  list.appendChild(createOccRow(defaults));
+  updateRemoveButtons();
+}
+
+function updateRemoveButtons(){
+  const rows = document.querySelectorAll('#occList .occ-row');
+  rows.forEach(r=>{
+    r.querySelector('.remove-occ').disabled = rows.length <= 1;
+  });
+}
+
+function resetOccRows(){
+  const list = document.getElementById('occList');
+  list.innerHTML = '';
+  addOccRow({data: isoDate(now.getFullYear(), now.getMonth(), now.getDate())});
+}
+
+document.getElementById('addOccBtn').addEventListener('click', ()=> addOccRow());
+
+document.getElementById('prevBtn').addEventListener('click', ()=>{
+  viewMonth--; if(viewMonth<0){ viewMonth=11; viewYear--; }
+  render();
+});
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  viewMonth++; if(viewMonth>11){ viewMonth=0; viewYear++; }
+  render();
+});
+document.getElementById('todayBtn').addEventListener('click', ()=>{
+  viewYear = now.getFullYear(); viewMonth = now.getMonth();
+  render();
+});
+
+document.getElementById('courseForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const formMsg = document.getElementById('formMsg');
+  const nome = document.getElementById('nome').value.trim();
+  const risorse = document.getElementById('risorse').value.trim();
+  const rows = [...document.querySelectorAll('#occList .occ-row')];
+
+  if(!nome){
+    formMsg.textContent = '⚠ inserisci un nome corso.';
+    formMsg.style.color = 'var(--conflict)';
+    return;
+  }
+
+  const occorrenze = [];
+  for(const row of rows){
+    const data = row.querySelector('.occ-data').value;
+    const inizio = row.querySelector('.occ-inizio').value;
+    const fine = row.querySelector('.occ-fine').value;
+    if(!data || !inizio || !fine){
+      formMsg.textContent = '⚠ ogni riga deve avere data, inizio e fine.';
+      formMsg.style.color = 'var(--conflict)';
+      return;
+    }
+    if(toMin(fine) <= toMin(inizio)){
+      formMsg.textContent = `⚠ per il ${data.split('-').reverse().join('/')} l'orario di fine deve essere dopo l'inizio.`;
+      formMsg.style.color = 'var(--conflict)';
+      return;
+    }
+    occorrenze.push({data, inizio, fine});
+  }
+
+  const nuoviCorsi = occorrenze.map(o => ({id: uid(), nome, data:o.data, inizio:o.inizio, fine:o.fine, risorse}));
+  try{
+    await addCoursesRemote(nuoviCorsi);
+  }catch(err){
+    return; // errore già mostrato in formMsg/status
+  }
+
+  formMsg.textContent = occorrenze.length === 1
+    ? `✓ "${nome}" aggiunto al ${occorrenze[0].data.split('-').reverse().join('/')}.`
+    : `✓ "${nome}" aggiunto su ${occorrenze.length} date.`;
+  formMsg.style.color = 'var(--teal)';
+
+  e.target.reset();
+  resetOccRows();
+});
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const stamp = isoDate(now.getFullYear(), now.getMonth(), now.getDate());
+  const blob = new Blob([JSON.stringify(courses, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `planning-corsi-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('importBtn').addEventListener('click', ()=>{
+  document.getElementById('importFile').click();
+});
+
+document.getElementById('importFile').addEventListener('change', (ev)=>{
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async ()=>{
+    try{
+      const parsed = JSON.parse(reader.result);
+      if(!Array.isArray(parsed)) throw new Error('formato non valido');
+      const valid = parsed.every(c => c && c.nome && c.data && c.inizio && c.fine);
+      if(!valid) throw new Error('formato non valido');
+      if(!confirm(`Importare ${parsed.length} corsi nel database condiviso? Si aggiungeranno a quelli già presenti.`)) return;
+      const normalizzati = parsed.map(c => ({...c, id: c.id || uid()}));
+      await addCoursesRemote(normalizzati);
+      statusEl.textContent = `importati ${normalizzati.length} corsi dal backup`;
+    }catch(err){
+      alert('Il file selezionato non è un backup valido di questo planning.');
+    }
+    ev.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
+resetOccRows();
+startSync();
+</script>
+</body>
+</html>
